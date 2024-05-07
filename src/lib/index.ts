@@ -53,6 +53,7 @@ class ServerlessIamPerFunctionPlugin {
       if (this.serverless.configSchemaHandler.defineFunctionProperties) {
         this.serverless.configSchemaHandler.defineFunctionProperties(this.PROVIDER_AWS, {
           properties: {
+            iamRoleCreateCustomerManagedPolicy: { type: 'boolean' },
             iamRoleStatementsInherit: { type: 'boolean' },
             iamRoleStatementsName: { type: 'string' },
             iamPermissionsBoundary: { $ref: '#/definitions/awsArn' },
@@ -61,6 +62,8 @@ class ServerlessIamPerFunctionPlugin {
         });
       }
     }
+
+    console.log('options', _options);
 
     this.hooks = {
       'before:package:finalize': this.createRolesPerFunction.bind(this),
@@ -272,6 +275,28 @@ class ServerlessIamPerFunctionPlugin {
   }
 
   /**
+   * Create a Customer Managed Policy with the policy statement of the lambda function to attach to the role.
+   * @param {*} functionObject
+   * @return array of statements (possibly empty)
+   */
+  createCustomerManagedPolicy(functionName: string, roleName: string, template: any, policyStatements: Statement[]) {
+    const managedPolicyName = `${functionName}-${this.serverless.service.provider.region}-policy`;
+
+    const managedPolicy = {
+      'Type': 'AWS::IAM::ManagedPolicy',
+      'Properties': {
+        'ManagedPolicyName': managedPolicyName,
+        'PolicyDocument': policyStatements,
+        'Roles': [roleName],
+      },
+    };
+
+    const normalizedIdentifier = this.serverless.providers.aws.naming.getNormalizedFunctionName(functionName)
+
+    template['Resources'][normalizedIdentifier + 'CustomerManagedPolicy'] = managedPolicy;
+  }
+
+  /**
    * Will check if function has a definition of iamRoleStatements.
    * If so will create a new Role for the function based on these statements.
    * @param {string} functionName
@@ -296,7 +321,7 @@ class ServerlessIamPerFunctionPlugin {
     const functionIamRole = _.cloneDeep(globalIamRole);
     // remove the statements
     const policyStatements: Statement[] = [];
-    functionIamRole.Properties.Policies[0].PolicyDocument.Statement = policyStatements;
+    functionIamRole.Properties.Policies = [];
     // set log statements
     policyStatements[0] = {
       Effect: 'Allow',
@@ -378,6 +403,20 @@ class ServerlessIamPerFunctionPlugin {
 
     functionIamRole.Properties.RoleName = functionObject.iamRoleStatementsName
       || this.getFunctionRoleName(functionName);
+
+    console.log('functionObject', functionObject);
+
+    if (functionObject.iamRoleCreateCustomerManagedPolicy) {
+      this.createCustomerManagedPolicy(
+        functionName,
+        functionIamRole.Properties.RoleName,
+        this.serverless.service.provider.compiledCloudFormationTemplate,
+        policyStatements,
+      );
+    } else {
+      functionIamRole.Properties.Policies[0].PolicyDocument.Statement = policyStatements;
+    }
+
     const roleResourceName = this.serverless.providers.aws.naming.getNormalizedFunctionName(functionName)
       + globalRoleName;
     this.serverless.service.provider.compiledCloudFormationTemplate.Resources[roleResourceName] = functionIamRole;
