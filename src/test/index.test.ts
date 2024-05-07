@@ -443,6 +443,25 @@ describe('plugin tests', function(this: any) {
         const policyName = defaultIamRoleLambdaExecution.Properties.PermissionsBoundary['Fn::Sub'];
         assert.equal(policyName, 'arn:aws:iam::xxxxx:policy/permissions_boundary');
       })
+
+      it('should add policy document to a Customer Managed Policy', () => {
+        const compiledResources = serverless.service.provider.compiledCloudFormationTemplate.Resources;
+
+        plugin.createRolesPerFunction();
+
+        const helloCustomerManagedPolicyCustomerManagedPolicy = compiledResources.HelloCustomerManagedPolicyCustomerManagedPolicy;
+
+        console.log('helloCustomerManagedPolicyCustomerManagedPolicy', JSON.stringify(helloCustomerManagedPolicyCustomerManagedPolicy, null, 2));
+        const managedPolicyName = helloCustomerManagedPolicyCustomerManagedPolicy.Properties.ManagedPolicyName;
+        assert.equal(managedPolicyName, 'helloCustomerManagedPolicy-us-east-1-policy');
+
+        const policyDocument = helloCustomerManagedPolicyCustomerManagedPolicy.Properties.PolicyDocument;
+        assert.equal(policyDocument.Version, '2012-10-17');
+        assert.lengthOf(policyDocument.Statement, 3);
+
+        const roles = helloCustomerManagedPolicyCustomerManagedPolicy.Properties.Roles;
+        assert.equal(roles[0].Ref, 'HelloCustomerManagedPolicyIamRoleLambdaExecution');
+      })
     });
   });
 

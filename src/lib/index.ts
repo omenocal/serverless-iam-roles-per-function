@@ -326,6 +326,8 @@ class ServerlessIamPerFunctionPlugin {
     const functionIamRole = _.cloneDeep(globalIamRole);
     // remove the statements
     const policyStatements: Statement[] = [];
+    const defaultRolePolicy = functionIamRole.Properties.Policies[0];
+    // clean policies
     functionIamRole.Properties.Policies = [];
     // set log statements
     policyStatements[0] = {
@@ -423,7 +425,8 @@ class ServerlessIamPerFunctionPlugin {
         policyStatements,
       );
     } else {
-      functionIamRole.Properties.Policies[0].PolicyDocument.Statement = policyStatements;
+      defaultRolePolicy.PolicyDocument.Statement = policyStatements;
+      functionIamRole.Properties.Policies.push(defaultRolePolicy);
     }
   }
 
