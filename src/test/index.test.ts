@@ -453,7 +453,7 @@ describe('plugin tests', function(this: any) {
 
         console.log('helloCustomerManagedPolicyCustomerManagedPolicy', JSON.stringify(helloCustomerManagedPolicyCustomerManagedPolicy, null, 2));
         const managedPolicyName = helloCustomerManagedPolicyCustomerManagedPolicy.Properties.ManagedPolicyName;
-        assert.equal(managedPolicyName, 'helloCustomerManagedPolicy-us-east-1-policy');
+        assert.equal(managedPolicyName, 'test-service-dev-helloCustomerManagedPolicy-us-east-1-policy');
 
         const policyDocument = helloCustomerManagedPolicyCustomerManagedPolicy.Properties.PolicyDocument;
         assert.equal(policyDocument.Version, '2012-10-17');

@@ -278,7 +278,8 @@ class ServerlessIamPerFunctionPlugin {
    * @return array of statements (possibly empty)
    */
   createCustomerManagedPolicy(functionName: string, roleName: string, template: any, policyStatements: Statement[]) {
-    const managedPolicyName = `${functionName}-${this.serverless.service.provider.region}-policy`;
+    const stackName = this.serverless.providers.aws.naming.getStackName();
+    const managedPolicyName = `${stackName}-${functionName}-${this.serverless.service.provider.region}-policy`;
 
     const managedPolicy = {
       'Type': 'AWS::IAM::ManagedPolicy',
