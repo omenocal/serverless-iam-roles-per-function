@@ -63,8 +63,6 @@ class ServerlessIamPerFunctionPlugin {
       }
     }
 
-    console.log('options', _options);
-
     this.hooks = {
       'before:package:finalize': this.createRolesPerFunction.bind(this),
     };
@@ -286,8 +284,15 @@ class ServerlessIamPerFunctionPlugin {
       'Type': 'AWS::IAM::ManagedPolicy',
       'Properties': {
         'ManagedPolicyName': managedPolicyName,
-        'PolicyDocument': policyStatements,
-        'Roles': [roleName],
+        'PolicyDocument': {
+          'Version': '2012-10-17',
+          'Statement': policyStatements,
+        },
+        'Roles': [
+          {
+            'Ref': roleName,
+          }
+        ],
       },
     };
 
@@ -404,24 +409,22 @@ class ServerlessIamPerFunctionPlugin {
     functionIamRole.Properties.RoleName = functionObject.iamRoleStatementsName
       || this.getFunctionRoleName(functionName);
 
-    console.log('functionObject', functionObject);
+    const roleResourceName = this.serverless.providers.aws.naming.getNormalizedFunctionName(functionName)
+      + globalRoleName;
+    this.serverless.service.provider.compiledCloudFormationTemplate.Resources[roleResourceName] = functionIamRole;
+    const functionResourceName = this.updateFunctionResourceRole(functionName, roleResourceName, globalRoleName);
+    functionToRoleMap.set(functionResourceName, roleResourceName);
 
     if (functionObject.iamRoleCreateCustomerManagedPolicy) {
       this.createCustomerManagedPolicy(
         functionName,
-        functionIamRole.Properties.RoleName,
+        roleResourceName,
         this.serverless.service.provider.compiledCloudFormationTemplate,
         policyStatements,
       );
     } else {
       functionIamRole.Properties.Policies[0].PolicyDocument.Statement = policyStatements;
     }
-
-    const roleResourceName = this.serverless.providers.aws.naming.getNormalizedFunctionName(functionName)
-      + globalRoleName;
-    this.serverless.service.provider.compiledCloudFormationTemplate.Resources[roleResourceName] = functionIamRole;
-    const functionResourceName = this.updateFunctionResourceRole(functionName, roleResourceName, globalRoleName);
-    functionToRoleMap.set(functionResourceName, roleResourceName);
   }
 
   /**
