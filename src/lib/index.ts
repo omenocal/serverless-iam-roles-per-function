@@ -14,6 +14,7 @@ class ServerlessIamPerFunctionPlugin {
   hooks: {[i: string]: () => void};
   serverless: any;
   awsPackagePlugin: any;
+  defaultCreateCustomerManagedPolicy: boolean;
   defaultInherit: boolean;
 
   readonly PROVIDER_AWS = 'aws';
@@ -39,6 +40,7 @@ class ServerlessIamPerFunctionPlugin {
           [PLUGIN_NAME]: {
             type: 'object',
             properties: {
+              defaultCreateCustomerManagedPolicy: { type: 'boolean' },
               defaultInherit: { type: 'boolean' },
               iamGlobalPermissionsBoundary: { $ref: '#/definitions/awsArn' },
             },
@@ -66,6 +68,7 @@ class ServerlessIamPerFunctionPlugin {
     this.hooks = {
       'before:package:finalize': this.createRolesPerFunction.bind(this),
     };
+    this.defaultCreateCustomerManagedPolicy = _.get(this.serverless.service, `custom.${PLUGIN_NAME}.defaultCreateCustomerManagedPolicy`, false);
     this.defaultInherit = _.get(this.serverless.service, `custom.${PLUGIN_NAME}.defaultInherit`, false);
   }
 
@@ -418,7 +421,10 @@ class ServerlessIamPerFunctionPlugin {
     const functionResourceName = this.updateFunctionResourceRole(functionName, roleResourceName, globalRoleName);
     functionToRoleMap.set(functionResourceName, roleResourceName);
 
-    if (functionObject.iamRoleCreateCustomerManagedPolicy) {
+    const isCustomerManagedPolicy = functionObject.iamRoleCreateCustomerManagedPolicy
+      || (this.defaultCreateCustomerManagedPolicy && functionObject.iamRoleCreateCustomerManagedPolicy !== false);
+
+    if (isCustomerManagedPolicy) {
       this.createCustomerManagedPolicy(
         functionName,
         roleResourceName,
