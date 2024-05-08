@@ -455,7 +455,8 @@ describe('plugin tests', function(this: any) {
 
         plugin.createRolesPerFunction();
 
-        const helloCustomerManagedPolicyCustomerManagedPolicy = compiledResources.HelloCustomerManagedPolicyCustomerManagedPolicy;
+        const helloCustomerManagedPolicyCustomerManagedPolicy =
+          compiledResources.HelloCustomerManagedPolicyCustomerManagedPolicy;
 
         const managedPolicyName = helloCustomerManagedPolicyCustomerManagedPolicy.Properties.ManagedPolicyName;
         assert.equal(managedPolicyName, 'test-service-dev-helloCustomerManagedPolicy-us-east-1-policy');
