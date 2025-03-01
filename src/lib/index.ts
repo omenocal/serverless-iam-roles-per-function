@@ -292,7 +292,7 @@ class ServerlessIamPerFunctionPlugin {
    * @param {*} roleName
    * @param {*} template
    * @param {*} policyStatements
-   * @return array of statements (possibly empty)
+   * @returns void
    */
   createCustomerManagedPolicy(functionName: string, roleName: string, template: any, policyStatements: Statement[]) {
     const stackName = this.serverless.providers.aws.naming.getStackName();
